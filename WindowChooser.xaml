@@ -1,0 +1,30 @@
+﻿<Window x:Class="Swichter.WindowChooser"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Swichter"
+        mc:Ignorable="d"
+        Title="Choose A Window" Height="450" Width="321" Background="#FF252525" Loaded="Window_Loaded">
+    <Grid Margin="5,5,5,5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+            
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ListBox x:Name="ListBox_Windows" Grid.Row="0" Grid.ColumnSpan="3" d:ItemsSource="{d:SampleData ItemCount=5}" Background="#FF404040" Foreground="#FFE0E0E0" Margin="5,5,5,5" />
+        <CheckBox x:Name="CheckBox_Suspend" Grid.Row="1" Grid.ColumnSpan="2" Content="Suspend" HorizontalAlignment="Right" IsChecked="True"/>
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal"  Grid.ColumnSpan="2" FlowDirection="RightToLeft">
+            <Button x:Name="Button_Okay" Content="Okay" Width="50" Click="Button_Okay_Click" />
+            <Button x:Name="Button_Cancel" Content="Cancel" Width="50" Click="Button_Cancel_Click" />
+        </StackPanel>
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <Button x:Name="Button_RefreshWindows" Content="Refresh" Width="50" Click="Button_RefreshWindows_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

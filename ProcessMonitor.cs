@@ -33,6 +33,17 @@ namespace Swichter
 		[DllImport("user32.dll")]
 		private static extern IntPtr GetForegroundWindow();
 
+		[DllImport("user32.dll")]
+		static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+		private const int HWND_TOPMOST = -1;
+		private const int HWND_TOP = 0;
+		private const int HWND_NOTOPMOST = -2;
+		private const int HWND_BOTTOM = 1;
+
+		private const int SWP_NOMOVE = 0x0002;
+		private const int SWP_NOSIZE = 0x0001;
+		
 		private const uint WM_NULL = 0;
 
 		private DateTime? _startTime;
@@ -52,6 +63,11 @@ namespace Swichter
 
 		private void ThreadRunner()
 		{
+			// The goal of this thread is to indicate to our program whether the target process is suspended.
+			// This is achieved by SENDing a WM_NULL message to the main window of the target process.
+			// If the process is running, SendMessage returns immediately.
+			// If the process is suspended, then SendMessage blocks until the main window thread can process the WM_NULL message.
+			
 			while (true)
 			{
 				lock (_lock)
@@ -62,21 +78,27 @@ namespace Swichter
 
 				IntPtr hwnd = _monitoredProcess.MainWindowHandle;
 				SendMessage(hwnd, WM_NULL, IntPtr.Zero, IntPtr.Zero);
+				
+				// Execution here means the process is not suspended
 
-				bool knownSuspended = false;
+				// prepare holder variables
+				bool old_knownSuspended = false;
 				EventHandler resumed;
+				
 				lock (_lock)
 				{
 					if (_continueThread == false) break;
 					_startTime = null;
-					knownSuspended = _knownSuspended;
+					old_knownSuspended = _knownSuspended;
 					_knownSuspended = false;
 					resumed = ProcessResumed;
 				}
 
-				if (knownSuspended)
+				// if the process was believed to be suspended and is now awake, then send an update that the process is running
+				if (old_knownSuspended)
 					_synchronizationContext.Post(state => resumed?.Invoke(this, EventArgs.Empty), null);
 
+				// arbitrary sleep duration
 				Thread.Sleep(3000);
 			}
 		}
@@ -86,24 +108,29 @@ namespace Swichter
 			DateTime startTime;
 			lock (_lock)
 			{
+				// if we know the thread is suspended, then return that fact
 				if (_knownSuspended) return true;
 
+				// the _startTime variable is set in ThreadRunner just prior to calling SendMessage suspending.
+				// Thus, if _startTime doesn't have a value, then we aren't suspended
 				if (_startTime == null) return false;
 
-				startTime = _startTime.Value;
 
+				startTime = _startTime.Value;
 				_knownSuspended = true;
 			}
 
+			// If the target process hasn't processed the WM_NULL message within 500 ms
+			// then it can be assumed to be suspended.
 			TimeSpan elapsed = DateTime.Now - _startTime.Value;
 			return elapsed.TotalMilliseconds > 500;
 		}
 
 		public void BringToFront()
-		{
+		{			
 			DateTime started = DateTime.Now;
-            lock (_lock) 
-            {
+			lock (_lock)
+			{
 				IntPtr hwnd = _monitoredProcess.MainWindowHandle;
 
 				IntPtr oldForegroundHwnd = GetForegroundWindow();
@@ -114,12 +141,21 @@ namespace Swichter
 						break;
 
 					if (!SetForegroundWindow(hwnd)) continue;
-					
+
 					if (oldForegroundHwnd != GetForegroundWindow())
 						break;
 
 					Thread.Sleep(1);
 				}
+			}
+		}
+
+		public void SetOnTop()
+		{
+            IntPtr hwnd = _monitoredProcess.MainWindowHandle;
+            if (false == SetWindowPos(hwnd, new IntPtr(HWND_TOPMOST), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE))
+            {
+                Debug.Print("SetWindowPos failed?");
             }
         }
 
@@ -148,7 +184,12 @@ namespace Swichter
 			{
 				if (_knownSuspended == true) return;
 
-				processSuspended = ProcessSuspended;
+                if (false == SetWindowPos(_monitoredProcess.MainWindowHandle, new IntPtr(HWND_NOTOPMOST), 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE))
+                {
+                    Debug.Print("SetWindowPos failed on suspend? (send to back)");
+                }
+
+                processSuspended = ProcessSuspended;
 				IntPtr processHandle = _monitoredProcess.Handle;
 				NtSuspendProcess(processHandle);
 

@@ -114,6 +114,7 @@ namespace Swichter
 
 				ProcessMonitor oldpm = _processMonitors[_runningIndex];
 				oldpm.Suspend();
+				// possibly enter z order change here
 
 				if (processCount == 2)
 				{
@@ -501,12 +502,13 @@ namespace Swichter
 		{
 			ProcessMonitor pm = _processMonitors[index];
 			pm.BringToFront();
-			pm.Resume();			
+			pm.Resume();
+			pm.SetOnTop();
 		}
 
 		private void Button_Run_Click(object sender, RoutedEventArgs e)
 		{
 			RunStop();
         }
-	}
+    }
 }

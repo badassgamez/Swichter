@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Swichter"
         xmlns:System="clr-namespace:System;assembly=mscorlib" xmlns:Collections="clr-namespace:System.Collections;assembly=mscorlib" x:Class="Swichter.MainWindow"
         mc:Ignorable="d"
-        Title="Swichter v0.2" Height="450" Width="554" Background="#FF252525" Foreground="Silver" Closed="Window_Closed"
+        Title="Swichter v1.1" Height="450" Width="554" Background="#FF252525" Foreground="Silver" Closed="Window_Closed"
         Topmost="{Binding IsChecked, ElementName=CheckBox_KeepOnTop}">
     <Grid>
         <Grid.ColumnDefinitions>
